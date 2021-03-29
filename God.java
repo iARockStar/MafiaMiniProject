@@ -1,9 +1,10 @@
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Random;
 
 public class God {
-    public static Player[] players = new Player[6];
+    public static Player[] players = new Player[7];
     public static String savedByDoc = "";
 
     public static void main(String[] args) {
@@ -39,7 +40,7 @@ public class God {
 
 
             String[] splitsRoles = roles.split(" ");
-            String regex1 = "(?i)(joker|villager|detective|doctor|bulletproof|mafia|godfather|silencer)";
+            String regex1 = "(?i)(joker|villager|detective|doctor|bulletproof|mafia|godfather|silencer|informer)";
             Pattern pattern1 = Pattern.compile(regex1);
             Matcher matcher1 = pattern1.matcher(roles);
             while (!matcher1.find()) {
@@ -92,10 +93,54 @@ public class God {
             System.out.println("Day " + counter);
             if (counter > 1) {
                 for (Player value : players) {
-                    if (value != null && value.tried_to_kill)
-                        System.out.println("mafia tried to kill " + value.getName() + ".");
-                    if (value!=null && value.Is_dead_by_mafia_thisNight)
+                    if (value != null && value.tried_to_kill && !value.Is_dead_by_mafia_thisNight) {
+                        System.out.println("mafia tried to kill someone.");
+                        if (value.getName().equalsIgnoreCase(savedByDoc))
+                            System.out.println("But he/she was saved by the doc.");
+                        else if (value instanceof Bulletproof)
+                            System.out.println("but he/she wore a bulletproof vest.");
+                    }
+                    else if(value != null && value.tried_to_kill && value.Is_dead_by_mafia_thisNight)
+                        System.out.println("mafia tried to kill "+value.getName()+".");
+                    if (value!=null && value.Is_dead_by_mafia_thisNight) {
                         System.out.println(value.getName() + " was killed.");
+                        if(value instanceof Informer ) {
+                            Random rand = new Random();
+                            System.out.println(value.getName() + " was an Informer");
+                            int randNum = rand.nextInt(4);
+                            outer : while (true) {
+                                if (randNum == 0) {
+                                    for (Player player : players) {
+                                        if (player instanceof Mafia && !player.Is_dead) {
+                                            System.out.println("There is a mafia who’s name starts with " + player.getName().charAt(0));
+                                            break outer;
+                                        }
+                                    }
+                                        randNum++;
+                                }
+                                if (randNum == 1) {
+                                    for (Player player : players) {
+                                        if (player.isTriedTokKillMarked() && !player.Is_dead) {
+                                            System.out.println(player.getName() + " was voted to be killed");
+                                            break outer;
+                                        }
+                                    } randNum++;
+                                }
+                                if (randNum == 2) {
+                                    mafiaCounter();
+                                }
+                                if (randNum == 3) {
+                                    for (Player player : players) {
+                                        if (player instanceof Joker && !player.Is_dead) {
+                                            System.out.println("There is a joker who’s name starts with " + player.getName().charAt(0));
+                                            break outer;
+                                        }
+                                            randNum -= 3;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 for (Player value : players) {
                     if (value != null && !value.canVote)
@@ -111,6 +156,11 @@ public class God {
             outer:
             while (!vote.equalsIgnoreCase("end_vote")) {
                 vote = in.nextLine();
+                if(vote.startsWith("swap_character")){
+                    System.out.println("voting in progress");
+                    vote = "";
+                    continue;
+                }
                 if (vote.equalsIgnoreCase("end_vote")) {
                     vote = "";
                     break;
@@ -145,7 +195,6 @@ public class God {
                             continue outer;
                         }
                     }
-
                 }
                 for (Player player : players) {
                     if (player != null && player.getName().equalsIgnoreCase(splits[1])) {
@@ -222,6 +271,11 @@ public class God {
             while (!input.equalsIgnoreCase("end_night")) {
                 boolean Is_found = false;
                 input = in.nextLine();
+                if(input.startsWith("swap_character")){
+                    System.out.println("can’t swap before end of night");
+                    input ="";
+                    continue;
+                }
                 if (input.equalsIgnoreCase("end_night")) {
                     break;
                 }
@@ -330,6 +384,7 @@ public class God {
                         player.Is_dead_by_mafia = true;
                         player.Is_dead = true;
                         player.tried_to_kill = true;
+                        player.setTriedTokKillMarked(true);
                         player.Is_dead_by_mafia_thisNight = true;
                     }
             }
@@ -342,19 +397,20 @@ public class God {
                     }
                 }
             } else if (counterForMafiaVote == 1) {
+                boolean saved = false;
                 for (Player player : players) {
                     if (player != null && player.Is_dead_by_mafia_thisNight)
                         if (player.getName().equalsIgnoreCase(savedByDoc)) {
                             player.Is_dead_by_mafia = false;
                             player.Is_dead = false;
                             player.Is_dead_by_mafia_thisNight = false;
-                            savedByDoc = "saved";
+                            saved = true;
                             break;
                         }
                 }
-                if (!savedByDoc.equalsIgnoreCase("saved")) {
+                if (!saved) {
                     for (Player player : players) {
-                        if (player.Is_dead_by_mafia_thisNight) {
+                        if (player!=null && player.Is_dead_by_mafia_thisNight) {
                             player.Is_dead_by_mafia = false;
                             player.Is_dead = false;
                             player.Is_dead_by_mafia_thisNight = false;
@@ -363,17 +419,19 @@ public class God {
                 }
             } else {
                 for (Player player : players) {
-                    if (player != null && player.Is_dead_by_mafia)
+                    if (player != null && player.Is_dead_by_mafia_thisNight)
                         if (player.getName().equalsIgnoreCase(savedByDoc)) {
                             player.Is_dead_by_mafia = false;
                             player.Is_dead = false;
+                            player.Is_dead_by_mafia_thisNight = false;
                             break;
                         }
                 }
                 for (Player player : players) {
-                    if (player instanceof Bulletproof && player.Is_dead_by_mafia && !((Bulletproof) player).hasTakenBullet()) {
+                    if (player instanceof Bulletproof && player.Is_dead_by_mafia_thisNight && !((Bulletproof) player).hasTakenBullet()) {
                         player.Is_dead = false;
                         player.Is_dead_by_mafia = false;
+                        player.Is_dead_by_mafia_thisNight = false;
                         ((Bulletproof) player).setTookBullet(true);
                         break;
                     }
@@ -398,6 +456,58 @@ public class God {
                 if (player instanceof Mafia)
                     ((Mafia) player).alreadyVoted = false;
             }
+            String swap;
+            System.out.println("Wanna swap characters?(yes,no)");
+            swap = in.nextLine();
+            if(swap.equalsIgnoreCase("yes")){
+                System.out.println("Please type (\"swap_character\" (first_player) (second_player)) to swap.");
+                String swapper = in.nextLine();
+                String[] splits = swapper.split(" ");
+                String swapper2 = "swap_character "+splits[1]+" "+splits[2];
+                String[] commandHolder = new String[3];
+                String[] commandHolder2 = new String[3];
+                boolean swapped = false;
+                for (int i = 0; i < players.length; i++) {
+                    if(players[i].getName().equalsIgnoreCase(splits[1]) && !players[i].Is_dead){
+                        for (int j = 0; j < counter; j++) {
+                            if(commandHolder[j].equalsIgnoreCase(swapper)){
+                                System.out.println("characters already swapped");
+                                swapped = true;
+                                break;
+                            }
+                            if(commandHolder2[j].equalsIgnoreCase(swapper2)){
+                                System.out.println("characters already swapped");
+                                swapped = true;
+                                break;
+                            }
+                        }if(!swapped){
+                            Player player1ToSwap = players[i];
+                            for (int j = 0; j < players.length; j++) {
+                                if(players[j].getName().equalsIgnoreCase(splits[2] )&& !players[j].Is_dead){
+                                    Player player2ToSwap = players[j];
+                                    Player temp = player1ToSwap;
+                                    player1ToSwap = player2ToSwap;
+                                    player2ToSwap = temp;
+                                    players[j] = player2ToSwap;
+                                }else{
+                                    System.out.println("user is dead");
+                                    swapped = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                    }else{
+                        System.out.println("user is dead");
+                        swapped = true;
+                        break;
+                    }
+                }
+                if(!swapped) {
+                    commandHolder[counter] = swapper;
+                    commandHolder2[counter] = swapper2;
+                }
+            }
             if (winnerChecker() == 1) {
                 System.out.println("Mafia won... they are all over the city!");
                 break;
@@ -419,6 +529,15 @@ public class God {
         System.out.println("GG");
     }
 
+    public static void mafiaCounter(){
+        int counterForMafia = 0;
+        for (Player player : players) {
+            if (player instanceof Mafia && !player.Is_dead)
+                counterForMafia++;
+        }
+        System.out.println("Number of alive mafia : "+counterForMafia);
+    }
+
     public static String getGameStat() {
         int counterForMafia = 0;
         int counterForVillager = 0;
@@ -428,7 +547,12 @@ public class God {
             else if (player instanceof Villager && !player.Is_dead)
                 counterForVillager++;
         }
-        return "Mafia: " + counterForMafia + "\n" + "Villager: " + counterForVillager + "\n";
+        if(counterForMafia>=counterForVillager)
+        return "Mafia: " + counterForMafia + "\n" + "Villager: " + counterForVillager+"\n"+"Seems like mafia took control of the city by numbers!";
+        else if(counterForMafia==0)
+        return "Mafia: " + counterForMafia + "\n" + "Villager: " + counterForVillager+"\n"+"Seems like there is no mafia in town anymore!";
+        else
+        return "Mafia: " + counterForMafia + "\n" + "Villager: " + counterForVillager;
     }
 
     public static int winnerChecker() {
@@ -464,13 +588,13 @@ public class God {
             return new Godfather(name, Role.godfather);
         else if (role.equalsIgnoreCase("silencer"))
             return new Silencer(name, Role.silencer);
-        return new Player(name, Role.villager);
+        return new Informer(name, Role.informer);
     }
 
 }
 
 enum Role {
-    joker, villager, detective, doctor, bulletproof, mafia, godfather, silencer
+    joker, villager, detective, doctor, bulletproof, mafia, godfather, silencer ,informer
 }
 
 class Player {
@@ -483,6 +607,8 @@ class Player {
     boolean Is_dead_by_mafia = false;
     public int numOfVotesDuringDay = 0;
     public int numOfVotesDuringNight = 0;
+    private boolean triedTokKillMarked = false;
+
 
     public Player(String name, Role role) {
         this.name = name;
@@ -503,6 +629,14 @@ class Player {
 
     public Role getRole() {
         return role;
+    }
+
+    public void setTriedTokKillMarked(boolean triedTokKillMarked) {
+        this.triedTokKillMarked = triedTokKillMarked;
+    }
+
+    public boolean isTriedTokKillMarked() {
+        return triedTokKillMarked;
     }
 
     @Override
@@ -598,6 +732,12 @@ class Silencer extends Mafia {
 
 class Godfather extends Mafia {
     public Godfather(String name, Role role) {
+        super(name, role);
+    }
+}
+
+class Informer extends Villager{
+    public Informer(String name, Role role) {
         super(name, role);
     }
 }

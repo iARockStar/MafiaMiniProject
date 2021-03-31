@@ -9,7 +9,7 @@ import java.util.Random;
  */
 public class God {
     /*Player[] array to save the participating players(they can be any kind(mafia,villager,etc))*/
-    public static Player[] players = new Player[10];
+    public static Player[] players = new Player[100];
     /*this string contains the player which was saved by the doc*/
     public static String savedByDoc = "";
 

@@ -580,7 +580,7 @@ public class God {
 //                System.out.println("Please type (\"swap_character\" (first_player) (second_player)) to swap.");
             String swapper = in.nextLine();
             String[] splits = swapper.split(" ");
-            while (splits[0].equalsIgnoreCase("swap_character")) {
+            while (!splits[0].equalsIgnoreCase("swap_character")) {
                 System.out.println("wrong command...");
                 swapper = in.nextLine();
                 splits = swapper.split(" ");

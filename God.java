@@ -175,7 +175,7 @@ public class God {
                         }
                     }
                 }
-                /*checking whether a player is silenced by the silencer of not*/
+                /*checking whether a player is silenced by the silencer or not*/
                 for (Player value : players) {
                     if (value != null && !value.canVote)
                         System.out.println(value.getName() + " silenced");
@@ -195,6 +195,12 @@ public class God {
                 /*it's not the time to swap characters!*/
                 if (vote.startsWith("swap_character")) {
                     System.out.println("voting in progress");
+                    vote = "";
+                    continue;
+                }
+                /*if the God accidentally enters end_night during the day*/
+                if (vote.equalsIgnoreCase("end_night")) {
+                    System.out.println("it's daytime");
                     vote = "";
                     continue;
                 }
@@ -289,8 +295,9 @@ public class God {
              */
             if (isOkayToKill) {
                 /*if the dead man is joker then the game is over*/
-                if (deadMan.getRole() == Role.joker) {
+                if (deadMan instanceof Joker) {
                     System.out.println("joker won! the game is over fellas");
+                    ((Joker) deadMan).setDeadDaytime(true);
                     break;
                 }
                 deadMan.Is_dead = true;
@@ -315,9 +322,9 @@ public class God {
             }
             String input = "";
             System.out.println("night " + counter);
-            /*before the start of the night players' names and their roles are printed for the God*/
+            /*before the start of the night players' names and their roles whom must wake up are printed for the God*/
             for (Player player : players) {
-                if (player != null && !player.Is_dead)
+                if (player != null && !player.Is_dead && (player instanceof Mafia || player instanceof Doctor || player instanceof Detective))
                     System.out.println(player.toString());
             }
             /*this while indicates night and will continue until the God enters end_night command*/
@@ -555,45 +562,54 @@ public class God {
                 if (player instanceof Silencer)
                     ((Silencer) player).setHasSilenced(false);
             }
-            /*this boolean checks if the mafia have voted or not
+            /* this boolean checks if the mafia have voted or not
              * it needs to become false for the next night.*/
             for (Player player : players) {
                 if (player instanceof Mafia)
                     ((Mafia) player).alreadyVoted = false;
             }
-            String swap;
+
             /*asks the user if he/she wants to swap characters*/
-            System.out.println("Wanna swap characters?(yes,no)");
-            swap = in.nextLine();
-            if (swap.equalsIgnoreCase("yes")) {
-                System.out.println("Please type (\"swap_character\" (first_player) (second_player)) to swap.");
-                String swapper = in.nextLine();
-                String[] splits = swapper.split(" ");
-                /*checking if the players are available.*/
-                for (int i = 0; i < players.length; i++) {
-                    if (players[i] != null && players[i].getName().equalsIgnoreCase(splits[1]) && !players[i].Is_dead) {
-                        for (int j = 0; j < players.length; j++) {
-                            /*swapping the roles and info of the players but not their names*/
-                            if (players[j] != null &&
-                                    players[j].getName().equalsIgnoreCase(splits[2]) && !players[j].Is_dead) {
-                                String player2ToSwapName = players[i].getName();
-                                Player temp = players[i];
-                                players[i] = players[j];
-                                players[j] = temp;
-                                players[j].setName(players[i].getName());
-                                players[i].setName(player2ToSwapName);
-                                /*checking the exceptions...*/
-                            } else if (players[j] != null && players[j].getName().equalsIgnoreCase(splits[2]) && players[j].Is_dead) {
-                                System.out.println("user is dead");
-                                break;
-                            }
+            /*added comment : seems like there is no choice
+             * but to swap characters at the end of the night so i commented the part
+             * where you choose you'd rather swap or not*/
+//                        String swap;
+//            System.out.println("Wanna swap characters?(yes,no)");
+//            swap = in.nextLine();
+//            if (swap.equalsIgnoreCase("yes")) {
+//                System.out.println("Please type (\"swap_character\" (first_player) (second_player)) to swap.");
+            String swapper = in.nextLine();
+            String[] splits = swapper.split(" ");
+            while (splits[0].equalsIgnoreCase("swap_character")) {
+                System.out.println("wrong command...");
+                swapper = in.nextLine();
+                splits = swapper.split(" ");
+            }
+            /*checking if the players are available.*/
+            for (int i = 0; i < players.length; i++) {
+                if (players[i] != null && players[i].getName().equalsIgnoreCase(splits[1]) && !players[i].Is_dead) {
+                    for (int j = 0; j < players.length; j++) {
+                        /*swapping the roles and info of the players but not their names*/
+                        if (players[j] != null &&
+                                players[j].getName().equalsIgnoreCase(splits[2]) && !players[j].Is_dead) {
+                            String player2ToSwapName = players[i].getName();
+                            Player temp = players[i];
+                            players[i] = players[j];
+                            players[j] = temp;
+                            players[j].setName(players[i].getName());
+                            players[i].setName(player2ToSwapName);
+                            /*checking the exceptions...*/
+                        } else if (players[j] != null && players[j].getName().equalsIgnoreCase(splits[2]) && players[j].Is_dead) {
+                            System.out.println("user is dead");
+                            break;
                         }
-                    } else if (players[i] != null && players[i].getName().equalsIgnoreCase(splits[1]) && players[i].Is_dead) {
-                        System.out.println("user is dead");
-                        break;
                     }
+                } else if (players[i] != null && players[i].getName().equalsIgnoreCase(splits[1]) && players[i].Is_dead) {
+                    System.out.println("user is dead");
+                    break;
                 }
             }
+
             /*checking the winner...*/
             if (winnerChecker() == 1) {
                 System.out.println("Mafia won... they are all over the city!");
@@ -615,6 +631,12 @@ public class God {
         }
         if (input2.equalsIgnoreCase("get_game_stat")) {
             System.out.println(getGameStat());
+            /*checking if the reason of the endgame was the Joker*/
+            for (Player player : players) {
+                if (player instanceof Joker)
+                    if (((Joker) player).isDeadDaytime())
+                        System.out.println("Seems like it was the joker whom his/her trap worked!");
+            }
         }
         System.out.println("GG");
     }
@@ -757,6 +779,7 @@ class Player {
 /*there is only one joker in the game*/
 class Joker extends Player {
     private static Joker instance;
+    private boolean isDeadDaytime = false;
 
     private Joker(String name, Role role) {
         super(name, role);
@@ -767,6 +790,14 @@ class Joker extends Player {
             instance = new Joker(name, role);
         }
         return instance;
+    }
+
+    public boolean isDeadDaytime() {
+        return isDeadDaytime;
+    }
+
+    public void setDeadDaytime(boolean deadDaytime) {
+        isDeadDaytime = deadDaytime;
     }
 }
 
@@ -786,6 +817,7 @@ class Detective extends Villager {
     public Detective(String name, Role role) {
         super(name, role);
     }
+
     /*checks if Detective asked the question at night*/
     public boolean hasAsked = false;
 
@@ -810,8 +842,8 @@ class Bulletproof extends Villager {
 
 class Mafia extends Player {
     /*the string contains the player a mafia voted.
-    * if they changed their it changes, too.
-    * */
+     * if they changed their it changes, too.
+     * */
     private String playerMafiaVoted = "";
     /*checks if the mafia voted or not.(changed their mind or not).*/
     public boolean alreadyVoted = false;
@@ -831,9 +863,9 @@ class Mafia extends Player {
 
 class Silencer extends Mafia {
     /*checks if the silencer has silenced the payer or not.
-    * so the next command which starts with silencer,
-    * it's a vote to kill a player.
-    * */
+     * so the next command which starts with silencer,
+     * it's a vote to kill a player.
+     * */
     private boolean hasSilenced = false;
 
     public Silencer(String name, Role role) {

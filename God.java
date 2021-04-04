@@ -34,7 +34,7 @@ public class God {
             matcher = pattern.matcher(names);
         }
         String[] splitsNames = names.split(" ");
-        System.out.println("Game is ready to be played! just assign the roles of players using \"assign_role\" + full name\nroles are : joker,villager,detective,doctor,bulletproof,mafia,godfather,silencer");
+        System.out.println("Game is ready to be played! just assign the roles of players using \"assign_role\" + full name\nroles are : joker,villager,detective,doctor,bulletproof,mafia,godfather,silencer,informer");
         /*if the player enters start_game command before assigning roles to all players,related error is printed.*/
         for (int i = 0; i < splitsNames.length - 1; i++) {
             String roles = in.nextLine();

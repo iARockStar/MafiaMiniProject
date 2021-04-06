@@ -27,14 +27,14 @@ public class God {
         String regex = "(?i)(create_game)";
         Pattern pattern = Pattern.compile(regex);
         Matcher matcher = pattern.matcher(names);
-        /*checking if the player entered create_agme command correctly*/
+        /*checking if the player entered create_game command correctly*/
         while (!matcher.find()) {
             System.out.println("no game created! please use keyword \"create_game\" at the beginning of line and then add players' names");
             names = in.nextLine();
             matcher = pattern.matcher(names);
         }
         String[] splitsNames = names.split(" ");
-        System.out.println("Game is ready to be played! just assign the roles of players using \"assign_role\" + full name\nroles are : joker,villager,detective,doctor,bulletproof,mafia,godfather,silencer");
+        System.out.println("Game is ready to be played! just assign the roles of players using \"assign_role\" + full name\nroles are : joker,villager,detective,doctor,bulletproof,mafia,godfather,silencer,informer");
         /*if the player enters start_game command before assigning roles to all players,related error is printed.*/
         for (int i = 0; i < splitsNames.length - 1; i++) {
             String roles = in.nextLine();
@@ -210,7 +210,7 @@ public class God {
                     break;
                 }
                 /*God can get stats about players alive(number of mafias and villagers*/
-                if (vote.equalsIgnoreCase("get_game_stat")) {
+                if (vote.equalsIgnoreCase("get_game_state")) {
                     System.out.println(getGameStat());
                     continue;
                 }
@@ -340,7 +340,7 @@ public class God {
                 if (input.equalsIgnoreCase("end_night")) {
                     break;
                 }
-                if (input.equalsIgnoreCase("get_game_stat")) {
+                if (input.equalsIgnoreCase("get_game_state")) {
                     System.out.println(getGameStat());
                     continue;
                 }
@@ -359,7 +359,12 @@ public class God {
                             /*if it's the doc then saved player name is saved in "savedByDoc" string*/
                             for (Player player : players) {
                                 if (player != null && player.getName().equalsIgnoreCase(splits[1]))
+                                    if(!value.Is_dead)
                                     savedByDoc = player.getName();
+                                    else {
+                                        System.out.println("user is dead");
+                                        break;
+                                    }
                             }
                         else if (value instanceof Detective)
                             /*detective can only ask once.
@@ -393,32 +398,48 @@ public class God {
                                     ((Silencer) value).setHasSilenced(true);
                                     for (Player player : players) {
                                         if (player != null && player.getName().equalsIgnoreCase(splits[1]))
+                                            if(!player.Is_dead)
                                             /*well if someone is silenced then he/she can not vote!*/
                                             player.canVote = false;
+                                            else {
+                                                System.out.println("user is dead");
+                                                break;
+                                            }
                                     }
                                 } else {
                                     /*second vote of the silencer
                                      */
                                     for (Player player : players) {
                                         if (player != null && player.getName().equalsIgnoreCase(splits[1]) && !((Mafia) value).alreadyVoted) {
-                                            /*adding votes for the players*/
-                                            player.numOfVotesDuringNight++;
-                                            ((Mafia) value).setPlayerMafiaVoted(player.getName());
-                                            ((Mafia) value).alreadyVoted = true;
-                                            player.setTriedTokKillMarked(true);
-                                            break;
-                                        } else if (player != null && player.getName().equalsIgnoreCase(splits[1]) && ((Mafia) value).alreadyVoted) {
-                                            for (Player item : players) {
-                                                if (item != null && item.getName().equalsIgnoreCase(((Mafia) value).getPlayerMafiaVoted())) {
-                                                    /*if a mafia member changes his mind then the last vote overwrites*/
-                                                    item.numOfVotesDuringNight--;
-                                                    item.setTriedTokKillMarked(false);
-                                                }
+                                            if(!player.Is_dead) {
+                                                /*adding votes for the players*/
+                                                player.numOfVotesDuringNight++;
+                                                ((Mafia) value).setPlayerMafiaVoted(player.getName());
+                                                ((Mafia) value).alreadyVoted = true;
+                                                player.setTriedTokKillMarked(true);
+                                                break;
+                                            }else {
+                                                System.out.println("user is dead");
+                                                break;
                                             }
-                                            /*adding the new vote*/
-                                            player.numOfVotesDuringNight++;
-                                            ((Mafia) value).setPlayerMafiaVoted(player.getName());
-                                            player.setTriedTokKillMarked(true);
+                                        } else if (player != null && player.getName().equalsIgnoreCase(splits[1]) && ((Mafia) value).alreadyVoted) {
+                                            if(!player.Is_dead) {
+                                                for (Player item : players) {
+                                                    if (item != null && item.getName().equalsIgnoreCase(((Mafia) value).getPlayerMafiaVoted())) {
+                                                        /*if a mafia member changes his mind then the last vote overwrites*/
+                                                        item.numOfVotesDuringNight--;
+                                                        item.setTriedTokKillMarked(false);
+                                                    }
+                                                }
+
+                                                /*adding the new vote*/
+                                                player.numOfVotesDuringNight++;
+                                                ((Mafia) value).setPlayerMafiaVoted(player.getName());
+                                                player.setTriedTokKillMarked(true);
+                                            }else {
+                                                System.out.println("user is dead");
+                                                break;
+                                            }
                                         }
                                     }
                                 }
@@ -426,17 +447,27 @@ public class God {
                                 /*voting for the members of the mafia except the Silencer*/
                                 for (Player player : players) {
                                     if (player != null && player.getName().equalsIgnoreCase(splits[1]) && !((Mafia) value).alreadyVoted) {
-                                        player.numOfVotesDuringNight++;
-                                        ((Mafia) value).setPlayerMafiaVoted(player.getName());
-                                        ((Mafia) value).alreadyVoted = true;
-                                        break outer;
-                                    } else if (player != null && player.getName().equalsIgnoreCase(splits[1]) && ((Mafia) value).alreadyVoted) {
-                                        for (Player item : players) {
-                                            if (item != null && item.getName().equalsIgnoreCase(((Mafia) value).getPlayerMafiaVoted()))
-                                                item.numOfVotesDuringNight--;
+                                        if(!player.Is_dead) {
+                                            player.numOfVotesDuringNight++;
+                                            ((Mafia) value).setPlayerMafiaVoted(player.getName());
+                                            ((Mafia) value).alreadyVoted = true;
+                                            break outer;
+                                        }else {
+                                            System.out.println("user is dead");
+                                            break;
                                         }
-                                        player.numOfVotesDuringNight++;
-                                        ((Mafia) value).setPlayerMafiaVoted(player.getName());
+                                    } else if (player != null && player.getName().equalsIgnoreCase(splits[1]) && ((Mafia) value).alreadyVoted) {
+                                        if (!player.Is_dead) {
+                                            for (Player item : players) {
+                                                if (item != null && item.getName().equalsIgnoreCase(((Mafia) value).getPlayerMafiaVoted()))
+                                                    item.numOfVotesDuringNight--;
+                                            }
+                                            player.numOfVotesDuringNight++;
+                                            ((Mafia) value).setPlayerMafiaVoted(player.getName());
+                                        }else {
+                                            System.out.println("user is dead");
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -580,7 +611,7 @@ public class God {
 //                System.out.println("Please type (\"swap_character\" (first_player) (second_player)) to swap.");
             String swapper = in.nextLine();
             String[] splits = swapper.split(" ");
-            while (splits[0].equalsIgnoreCase("swap_character")) {
+            while (!splits[0].equalsIgnoreCase("swap_character")) {
                 System.out.println("wrong command...");
                 swapper = in.nextLine();
                 splits = swapper.split(" ");
@@ -623,13 +654,13 @@ public class God {
         /*if the winner is determined then the while loop breaks.
          * user is allowed to see the number of the mafia and villager players
          * or finish the game using "finish" command*/
-        System.out.println("type \"get_game_stat\" to see what happened or \"finish\" to finish the game");
+        System.out.println("type \"get_game_state\" to see what happened or \"finish\" to finish the game");
         String input2 = in.nextLine();
-        while (!input2.equalsIgnoreCase("get_game_stat") && !input2.equalsIgnoreCase("finish")) {
+        while (!input2.equalsIgnoreCase("get_game_state") && !input2.equalsIgnoreCase("finish")) {
             System.out.println("wrong command...");
             input2 = in.nextLine();
         }
-        if (input2.equalsIgnoreCase("get_game_stat")) {
+        if (input2.equalsIgnoreCase("get_game_state")) {
             System.out.println(getGameStat());
             /*checking if the reason of the endgame was the Joker*/
             for (Player player : players) {
